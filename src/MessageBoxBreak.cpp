@@ -25,11 +25,15 @@ MessageBoxBreak::MessageBoxBreak( const QString &title, int inter, QWidget *pare
 
 	timer.start();
 	timerTime.start();
+
+	QApplication::alert( this );
+	QApplication::beep();
 }
 
 MessageBoxBreak::~MessageBoxBreak()
 {
 	delete ui;
+	QApplication::beep();
 }
 
 void MessageBoxBreak::slotUpdateTime()

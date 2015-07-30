@@ -8,6 +8,7 @@
 #include <QTime>
 
 #include "Timer.h"
+#include "SystemIdleTime.h"
 
 namespace Ui {
 class Options;
@@ -28,10 +29,11 @@ protected:
 protected slots:
 	void slotShow();
 	void slotAboutToShowTrayMenu();
+	void slotAboutToHideTrayMenu();
 	void slotUpdateMicroBreakEvery();
 	void slotUpdateRestBreakEvery();
 
-	void slotDebug();
+	void slotCheckIdleTime();
 
 	void slotTimeChanged( const QTime &time = QTime() );
 
@@ -41,8 +43,10 @@ protected slots:
 private:
 	Ui::Options *ui;
 
-	QPointer< QAction > showAction;
-	QPointer< QAction >	quitAction;
+	QPointer< QAction > actionShow;
+	QPointer< QAction >	actionQuit;
+	QPointer< QAction >	actionTakeMicroBreak;
+	QPointer< QAction >	actionTakeRestBreak;
 
 	QPointer< QSystemTrayIcon >	trayIcon;
 	QPointer< QMenu >			trayIconMenu;
@@ -50,8 +54,8 @@ private:
 	Timer timerMicroBreakEvery;
 	Timer timerRestBreakEvery;
 
-	Timer timerDebug;
-	QTime timeDebug;
+	Timer timerCheckIdleTime;
+	QTime timeCheckIdleTime;
 
 	int microBreak;
 	int microBreakEvery;
@@ -59,5 +63,6 @@ private:
 	int restBreak;
 	int restBreakEvery;
 
+	SystemIdleTime systemIdleTime;
 };
 

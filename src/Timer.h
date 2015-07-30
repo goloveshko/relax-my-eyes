@@ -31,6 +31,7 @@ public slots:
 	void stop();
 
 	void pause();
+	void resume();
 
 private:
 	int timeLeft;

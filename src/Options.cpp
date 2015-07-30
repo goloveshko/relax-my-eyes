@@ -2,11 +2,18 @@
 #include "ui_Options.h"
 #include "MessageBoxBreak.h"
 #include <QPushButton>
+#include <QDesktopServices>
+#include <QUrl>
+#include <QSound>
+
+#include <QDebug>
+
+#define PAUSE_TIMER_AFTER_SEC	30
 
 Options::Options(QWidget *parent)
 	: QDialog(parent)
 	, ui(new Ui::Options)
-	, timeDebug( 0, 0 )
+	, timeCheckIdleTime( 0, 0 )
 {
 	ui->setupUi(this);
 
@@ -33,8 +40,8 @@ Options::Options(QWidget *parent)
 
 	slotTimeChanged();
 
-	timerDebug.start( 1000 );
-	connect( &timerDebug, SIGNAL( timeout() ), this, SLOT( slotDebug() ) );
+	timerCheckIdleTime.start( 400 );
+	connect( &timerCheckIdleTime, SIGNAL( timeout() ), this, SLOT( slotCheckIdleTime() ) );
 
 	ui->labelDebug->hide();
 }
@@ -46,19 +53,28 @@ Options::~Options()
 
 void Options::createActions()
 {
-	showAction = new QAction(tr("&Show"), this);
-	connect(showAction, SIGNAL(triggered()), this, SLOT(slotShow()));
+	actionShow = new QAction(tr("&Show"), this);
+	connect(actionShow, SIGNAL(triggered()), this, SLOT(slotShow()));
 
-	quitAction = new QAction(tr("&Quit"), this);
-	connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
+	actionQuit = new QAction(tr("&Quit"), this);
+	connect(actionQuit, SIGNAL(triggered()), qApp, SLOT(quit()));
+
+	actionTakeMicroBreak = new QAction(tr("Take a micro break"), this);
+	connect(actionTakeMicroBreak, SIGNAL(triggered()), this, SLOT(slotUpdateMicroBreakEvery()));
+
+	actionTakeRestBreak = new QAction(tr("Take a rest break"), this);
+	connect(actionTakeRestBreak, SIGNAL(triggered()), this, SLOT(slotUpdateRestBreakEvery()));
 }
 
 void Options::createTrayIcon()
 {
 	trayIconMenu = new QMenu(this);
-	trayIconMenu->addAction(showAction);
+	trayIconMenu->addAction(actionTakeMicroBreak);
+	trayIconMenu->addAction(actionTakeRestBreak);
 	trayIconMenu->addSeparator();
-	trayIconMenu->addAction(quitAction);
+	trayIconMenu->addAction(actionShow);
+	trayIconMenu->addSeparator();
+	trayIconMenu->addAction(actionQuit);
 
 	trayIcon = new QSystemTrayIcon(this);
 	trayIcon->setContextMenu(trayIconMenu);
@@ -70,10 +86,12 @@ void Options::createTrayIcon()
 	trayIcon->setToolTip(tr("Relax My Eyes"));
 
 	connect( trayIconMenu, SIGNAL(aboutToShow()), this, SLOT(slotAboutToShowTrayMenu()) );
+	connect( trayIconMenu, SIGNAL(aboutToHide()), this, SLOT(slotAboutToHideTrayMenu()) );
 }
 
 void Options::slotShow()
 {
+	//QSound::play("/System/Library/Sounds/Purr.aiff");
 	if( isVisible() )
 	{
 		hide();
@@ -90,19 +108,24 @@ void Options::slotShow()
 
 void Options::slotAboutToShowTrayMenu()
 {
-	if( showAction.isNull() )
+	if( actionShow.isNull() )
 	{
 		return;
 	}
 
 	if( isVisible() )
 	{
-		showAction->setText(tr("&Hide Options"));
+		actionShow->setText(tr("&Hide Options"));
 	}
 	else
 	{
-		showAction->setText(tr("&Show Options"));
+		actionShow->setText(tr("&Show Options"));
 	}
+}
+
+void Options::slotAboutToHideTrayMenu()
+{
+
 }
 
 void Options::slotUpdateMicroBreakEvery()
@@ -120,7 +143,7 @@ void Options::slotUpdateMicroBreakEvery()
 
 	if( remTime * 2 < iter )
 	{
-		remTime += iter / 2;
+		remTime += iter / 4;
 	}
 
 	timerRestBreakEvery.start( remTime );
@@ -138,25 +161,41 @@ void Options::slotUpdateRestBreakEvery()
 	timerRestBreakEvery.start( restBreakEvery );
 }
 
-void Options::slotDebug()
+void Options::slotCheckIdleTime()
 {
-	int interval = timerDebug.interval();
-	timeDebug = timeDebug.addMSecs( interval );
+	int interval = timerCheckIdleTime.interval();
+	timeCheckIdleTime = timeCheckIdleTime.addMSecs( interval );
 
-	int interval1 = timerMicroBreakEvery.interval();
 	int remainingTime1 = timerMicroBreakEvery.remainingTime();
 	int remainingTime2 = timerRestBreakEvery.remainingTime();
-	int diff = interval1 - remainingTime1;
 
 	QTime time1( 0, 0 );
-	time1 = time1.addMSecs( remainingTime1 );
+	time1 = time1.addMSecs( qMax( 0, remainingTime1 ) );
 
 	QTime time2( 0, 0 );
-	time2 = time2.addMSecs( remainingTime2 );
+	time2 = time2.addMSecs( qMax( 0, remainingTime2 ) );
 
 	QString str = time1.toString() + " " + time2.toString();
 
 	ui->labelDebug->setText( str );
+
+	actionTakeMicroBreak->setText( tr("Next micro break in ") + time1.toString() );
+	actionTakeRestBreak->setText( tr("Next rest break in ") + time2.toString() );
+
+	double it = systemIdleTime.getIdleTime();
+
+	if( PAUSE_TIMER_AFTER_SEC < it )
+	{
+		timerMicroBreakEvery.pause();
+		timerRestBreakEvery.pause();
+		//qDebug() << "Pause" << it;
+	}
+	else
+	{
+		timerMicroBreakEvery.resume();
+		timerRestBreakEvery.resume();
+		//qDebug() << "Resume" << it;
+	}
 }
 
 void Options::slotTimeChanged( const QTime &time )
@@ -187,5 +226,5 @@ void Options::slotRestoreDefaults()
 
 void Options::slotHelp()
 {
-
+	QDesktopServices::openUrl( QUrl( "https://github.com/goloveshko/relax-my-eyes", QUrl::TolerantMode ) );
 }

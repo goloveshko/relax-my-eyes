@@ -48,6 +48,14 @@ void Timer::pause()
 //	}
 }
 
+void Timer::resume()
+{
+	if( 0 < timeLeft )
+	{
+		start( timeLeft );
+	}
+}
+
 void Timer::setState( Timer::TimerState state )
 {
 	timerState = state;
