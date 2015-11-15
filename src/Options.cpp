@@ -1,19 +1,34 @@
 #include "Options.h"
 #include "ui_Options.h"
+
 #include "MessageBoxBreak.h"
 #include <QPushButton>
 #include <QDesktopServices>
 #include <QUrl>
 #include <QSound>
+#include <QDir>
 
+#include <QSettings>
+
+#include <QMessageBox>
 #include <QDebug>
 
 #define PAUSE_TIMER_AFTER_SEC	30
+
+#define TIME_MICRO_BREAK "Time Micro Break"
+#define TIME_MICRO_BREAK_EVERY "Time Micro Break Every"
+#define TIME_REST_BREAK "Time Rest Break"
+#define TIME_REST_BREAK_EVERY "Time Rest Every"
+
+#define ALERT "Alert"
+#define ALERT_VOLUME "Alert Volume"
 
 Options::Options(QWidget *parent)
 	: QDialog(parent)
 	, ui(new Ui::Options)
 	, timeCheckIdleTime( 0, 0 )
+	, currentTime( QTime::currentTime() )
+	, isTimersPaused( false )
 {
 	ui->setupUi(this);
 
@@ -21,14 +36,13 @@ Options::Options(QWidget *parent)
 
 	createActions();
 	createTrayIcon();
+	createComboBoxAlert();
 
 	trayIcon->show();
 
 	connect( &timerMicroBreakEvery, SIGNAL( timeout() ), this, SLOT( slotUpdateMicroBreakEvery() ) );
 	connect( &timerRestBreakEvery, SIGNAL( timeout() ), this, SLOT( slotUpdateRestBreakEvery() ) );
 
-	//connect( ui->buttonBox->button( QDialogButtonBox::Cancel ), SIGNAL( clicked() ), this, SLOT( reject() ) );
-	//connect( ui->buttonBox->button( QDialogButtonBox::Ok ), SIGNAL( clicked() ), this, SLOT( accept() ) );
 	connect( ui->buttonBox->button( QDialogButtonBox::Close ), SIGNAL( clicked() ), this, SLOT( reject() ) );
 	connect( ui->buttonBox->button( QDialogButtonBox::Help ), SIGNAL( clicked() ), this, SLOT( slotHelp() ) );
 	connect( ui->buttonBox->button( QDialogButtonBox::RestoreDefaults ), SIGNAL( clicked() ), this, SLOT( slotRestoreDefaults() ) );
@@ -38,16 +52,19 @@ Options::Options(QWidget *parent)
 	connect( ui->timeEditRestBreak, SIGNAL( timeChanged(const QTime &) ), this, SLOT( slotTimeChanged(const QTime &) ) );
 	connect( ui->timeEditRestBreakEvery, SIGNAL( timeChanged(const QTime &) ), this, SLOT( slotTimeChanged(const QTime &) ) );
 
-	slotTimeChanged();
+	connect( ui->sliderVolume, SIGNAL( sliderReleased() ), this, SLOT( slotVolumeChanged() ) );
 
 	timerCheckIdleTime.start( 400 );
 	connect( &timerCheckIdleTime, SIGNAL( timeout() ), this, SLOT( slotCheckIdleTime() ) );
 
 	ui->labelDebug->hide();
+
+	loadSettings();
 }
 
 Options::~Options()
 {
+	saveSettings();
 	delete ui;
 }
 
@@ -89,9 +106,18 @@ void Options::createTrayIcon()
 	connect( trayIconMenu, SIGNAL(aboutToHide()), this, SLOT(slotAboutToHideTrayMenu()) );
 }
 
+void Options::createComboBoxAlert()
+{
+	foreach( QFileInfo var, sound.getSoundInfoList() )
+	{
+		ui->comboBoxAlert->addItem( var.baseName(), var.filePath() );
+	}
+
+	connect( ui->comboBoxAlert, SIGNAL( activated(int) ), this, SLOT( slotAlertChanged(int) ) );
+}
+
 void Options::slotShow()
 {
-	//QSound::play("/System/Library/Sounds/Purr.aiff");
 	if( isVisible() )
 	{
 		hide();
@@ -101,9 +127,8 @@ void Options::slotShow()
 		show();
 	}
 
-	//qApp->processEvents();
-	raise();
-	activateWindow();
+	//raise();
+	//activateWindow();
 }
 
 void Options::slotAboutToShowTrayMenu()
@@ -132,8 +157,10 @@ void Options::slotUpdateMicroBreakEvery()
 {
 	timerMicroBreakEvery.stop();
 	timerRestBreakEvery.pause();
+	timerCheckIdleTime.stop();
 
 	MessageBoxBreak msg( tr( "micro break" ), microBreak );
+	connect( &msg, SIGNAL( signalPlaySound() ), this, SLOT( slotPlaySound() ) );
 	msg.exec();
 
 	timerMicroBreakEvery.start( microBreakEvery );
@@ -147,18 +174,22 @@ void Options::slotUpdateMicroBreakEvery()
 	}
 
 	timerRestBreakEvery.start( remTime );
+	timerCheckIdleTime.start();
 }
 
 void Options::slotUpdateRestBreakEvery()
 {
 	timerMicroBreakEvery.stop();
 	timerRestBreakEvery.stop();
+	timerCheckIdleTime.stop();
 
 	MessageBoxBreak msg( tr( "rest break" ), restBreak );
+	connect( &msg, SIGNAL( signalPlaySound() ), this, SLOT( slotPlaySound() ) );
 	msg.exec();
 
 	timerMicroBreakEvery.start( microBreakEvery );
 	timerRestBreakEvery.start( restBreakEvery );
+	timerCheckIdleTime.start();
 }
 
 void Options::slotCheckIdleTime()
@@ -166,35 +197,62 @@ void Options::slotCheckIdleTime()
 	int interval = timerCheckIdleTime.interval();
 	timeCheckIdleTime = timeCheckIdleTime.addMSecs( interval );
 
-	int remainingTime1 = timerMicroBreakEvery.remainingTime();
-	int remainingTime2 = timerRestBreakEvery.remainingTime();
+	int remainingTimeMicroBreak = timerMicroBreakEvery.remainingTime();
+	int remainingTimeRestBreak = timerRestBreakEvery.remainingTime();
 
-	QTime time1( 0, 0 );
-	time1 = time1.addMSecs( qMax( 0, remainingTime1 ) );
+	QTime timeMicroBreak( 0, 0 );
+	timeMicroBreak = timeMicroBreak.addMSecs( qMax( 0, remainingTimeMicroBreak ) );
 
-	QTime time2( 0, 0 );
-	time2 = time2.addMSecs( qMax( 0, remainingTime2 ) );
+	QTime timeRestBreak( 0, 0 );
+	timeRestBreak = timeRestBreak.addMSecs( qMax( 0, remainingTimeRestBreak ) );
 
-	QString str = time1.toString() + " " + time2.toString();
+	actionTakeMicroBreak->setText( tr("Next micro break in ") + timeMicroBreak.toString() );
+	actionTakeRestBreak->setText( tr("Next rest break in ") + timeRestBreak.toString() );
 
-	ui->labelDebug->setText( str );
 
-	actionTakeMicroBreak->setText( tr("Next micro break in ") + time1.toString() );
-	actionTakeRestBreak->setText( tr("Next rest break in ") + time2.toString() );
+	int intervalTimeMicroBreak = timerMicroBreakEvery.interval();
+	int intervalTimeRestBreak = timerRestBreakEvery.interval();
+	int msecs = currentTime.msecsTo( QTime::currentTime() );
+
+	if( !isTimersPaused && ( intervalTimeMicroBreak < msecs || intervalTimeRestBreak < msecs ) )
+	{
+		timerMicroBreakEvery.stop();
+		timerMicroBreakEvery.start( microBreakEvery );
+		//qDebug() << "intervalTimeMicroBreak" << intervalTimeMicroBreak / 1000 << msecs << currentTime << microBreakEvery / 1000;
+		//QMessageBox::information( NULL, "timerMicroBreakEvery reset", "timerMicroBreakEvery reset");
+
+		if( intervalTimeRestBreak < msecs )
+		{
+			timerRestBreakEvery.stop();
+			timerRestBreakEvery.start( restBreakEvery );
+			//qDebug() << "intervalTimeRestBreak" << intervalTimeRestBreak / 1000 << msecs << currentTime << restBreakEvery / 1000;
+			//QMessageBox::information( NULL, "timerRestBreakEvery reset", "timerRestBreakEvery reset");
+		}
+		currentTime = QTime::currentTime();
+
+		return;
+	}
 
 	double it = systemIdleTime.getIdleTime();
 
-	if( PAUSE_TIMER_AFTER_SEC < it )
+	if( !isTimersPaused )
+	{
+		currentTime = QTime::currentTime();
+	}
+
+	if( !isTimersPaused && PAUSE_TIMER_AFTER_SEC < it )
 	{
 		timerMicroBreakEvery.pause();
 		timerRestBreakEvery.pause();
-		//qDebug() << "Pause" << it;
+		isTimersPaused = true;
+		//qDebug() << "Pause" << it << intervalTimeMicroBreak / 1000 << intervalTimeRestBreak / 1000 << msecs << QTime::currentTime();
 	}
-	else
+	else if( isTimersPaused && PAUSE_TIMER_AFTER_SEC > it )
 	{
 		timerMicroBreakEvery.resume();
 		timerRestBreakEvery.resume();
-		//qDebug() << "Resume" << it;
+		isTimersPaused = false;
+		//qDebug() << "Resume" << it << intervalTimeMicroBreak / 1000 << intervalTimeRestBreak / 1000 << msecs << QTime::currentTime();
 	}
 }
 
@@ -221,10 +279,98 @@ void Options::slotRestoreDefaults()
 	ui->timeEditRestBreak->setTime( QTime( 0, 10, 0 ) );
 	ui->timeEditRestBreakEvery->setTime( QTime( 0, 45, 0 ) );
 
+	ui->comboBoxAlert->setCurrentIndex( 0 );
+
+	ui->sliderVolume->setValue( 50 );
+
 	slotTimeChanged();
 }
 
 void Options::slotHelp()
 {
-	QDesktopServices::openUrl( QUrl( "https://github.com/goloveshko/relax-my-eyes", QUrl::TolerantMode ) );
+	QString domain = qApp->organizationDomain();
+	QDesktopServices::openUrl( QUrl( domain, QUrl::TolerantMode ) );
+}
+
+void Options::alertChanged( bool playSound )
+{
+	QString path = ui->comboBoxAlert->itemData( ui->comboBoxAlert->currentIndex() ).toString();
+
+	sound.setPath( path );
+
+	if( playSound )
+	{
+		sound.play();
+	}
+}
+
+void Options::slotAlertChanged( int index )
+{
+	Q_UNUSED( index )
+	alertChanged( true );
+}
+
+void Options::slotVolumeChanged()
+{
+	int value = ui->sliderVolume->value();
+
+	float volume = (float)value / 100.0f;
+
+	volume = qMax( 0.0f, volume );
+	volume = qMin( 1.0f, volume );
+	sound.setVolume( volume );
+	sound.play();
+}
+
+void Options::slotPlaySound()
+{
+	sound.play();
+}
+
+void Options::saveSettings()
+{
+	QSettings settings("goloveshko", "RelaxMyEyes");
+
+	QTime timeMicroBreak = ui->timeEditMicroBreak->time();
+	QTime timeMicroBreakEvery = ui->timeEditMicroBreakEvery->time();
+	QTime timeRestBreak = ui->timeEditRestBreak->time();
+	QTime timeRestBreakEvery = ui->timeEditRestBreakEvery->time();
+
+	int index = ui->comboBoxAlert->currentIndex();
+
+	int value = ui->sliderVolume->value();
+
+	settings.setValue( TIME_MICRO_BREAK,		timeMicroBreak );
+	settings.setValue( TIME_MICRO_BREAK_EVERY,	timeMicroBreakEvery );
+	settings.setValue( TIME_REST_BREAK,			timeRestBreak );
+	settings.setValue( TIME_REST_BREAK_EVERY,	timeRestBreakEvery );
+
+	settings.setValue( ALERT,					index );
+	settings.setValue( ALERT_VOLUME,			value );
+}
+
+void Options::loadSettings()
+{
+	QSettings settings("goloveshko", "RelaxMyEyes");
+
+	QTime timeMicroBreak = settings.value( TIME_MICRO_BREAK, QTime( 0, 1, 0 ) ).toTime();
+	QTime timeMicroBreakEvery = settings.value( TIME_MICRO_BREAK_EVERY, QTime( 0, 10, 0 ) ).toTime();
+	QTime timeRestBreak = settings.value( TIME_REST_BREAK, QTime( 0, 10, 0 ) ).toTime();
+	QTime timeRestBreakEvery = settings.value( TIME_REST_BREAK_EVERY, QTime( 0, 45, 0 ) ).toTime();
+
+	int index = settings.value( ALERT, 0 ).toInt();
+	int value = settings.value( ALERT_VOLUME, 50 ).toInt();
+
+	ui->timeEditMicroBreak->setTime( timeMicroBreak );
+	ui->timeEditMicroBreakEvery->setTime( timeMicroBreakEvery );
+	ui->timeEditRestBreak->setTime( timeRestBreak );
+	ui->timeEditRestBreakEvery->setTime( timeRestBreakEvery );
+
+	ui->comboBoxAlert->setCurrentIndex( index );
+
+	ui->sliderVolume->setValue( value );
+
+	slotTimeChanged();
+	alertChanged( false );
+	slotVolumeChanged();
 }

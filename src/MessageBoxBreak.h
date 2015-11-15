@@ -2,6 +2,7 @@
 
 #include <QDialog>
 #include <QTimer>
+#include <QTime>
 
 namespace Ui {
 class MessageBoxBreak;
@@ -17,13 +18,20 @@ public:
 
 	void setInterval( int inter );
 
+protected:
+	void showEvent(QShowEvent * event);
+
 protected slots:
 	void slotUpdateTime();
+
+signals:
+	void signalPlaySound();
 
 private:
 	Ui::MessageBoxBreak *ui;
 	int interval;
 	QTimer timer;
-	QTimer timerTime;
+	QTimer currentTimer;
+	QTime currentTime;
 };
 

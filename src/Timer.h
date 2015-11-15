@@ -24,14 +24,16 @@ public:
 
 	int remainingTime() const;
 
+	void pause();
+	void resume();
+
+	void restart();
+
 public slots:
 	void start(int msec);
 
 	void start();
 	void stop();
-
-	void pause();
-	void resume();
 
 private:
 	int timeLeft;

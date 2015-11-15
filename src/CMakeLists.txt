@@ -20,6 +20,7 @@ set (HEADERS
 	./MessageBoxBreak.h
 	./Options.h
 	./Timer.h
+	./Sound.h
 	./SystemIdleTime.h)
 
 set (SOURCES
@@ -39,6 +40,7 @@ set(EXTRA_LIBS)
 IF (APPLE)
 set(SOURCES
 	${SOURCES}
+	./Sound.mm
 	./SystemIdleTime.mm
 )
 

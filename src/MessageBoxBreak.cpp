@@ -7,43 +7,53 @@ MessageBoxBreak::MessageBoxBreak( const QString &title, int inter, QWidget *pare
 	: QDialog( parent )
 	, ui(new Ui::MessageBoxBreak)
 	, interval( inter )
+	, currentTime( QTime::currentTime() )
 {
 	ui->setupUi( this );
 
 	setWindowTitle( tr("Take a %1").arg( title ) );
 
-	//setWindowFlags( Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowTitleHint | Qt::WindowCloseButtonHint | Qt::CustomizeWindowHint | Qt::WindowStaysOnTopHint );
 	setWindowFlags( Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowStaysOnTopHint );
 
-	connect( ui->buttonBox->button( QDialogButtonBox::Abort ), SIGNAL( clicked() ), this, SLOT( reject() ) );
+	connect( ui->buttonBox->button( QDialogButtonBox::Cancel ), SIGNAL( clicked() ), this, SLOT( reject() ) );
+
+	ui->buttonBox->button( QDialogButtonBox::Cancel )->setText( tr("Skip") );
 
 	timer.setInterval( interval );
 	connect( &timer, SIGNAL( timeout() ), this, SLOT( accept() ) );
 
-	timerTime.setInterval( 100 );
-	connect( &timerTime, SIGNAL( timeout() ), this, SLOT( slotUpdateTime() ) );
+	currentTimer.setInterval( 400 );
+	connect( &currentTimer, SIGNAL( timeout() ), this, SLOT( slotUpdateTime() ) );
 
 	timer.start();
-	timerTime.start();
-
-	QApplication::alert( this );
-	QApplication::beep();
+	currentTimer.start();
 }
 
 MessageBoxBreak::~MessageBoxBreak()
 {
+	emit signalPlaySound();
 	delete ui;
-	QApplication::beep();
 }
 
 void MessageBoxBreak::slotUpdateTime()
 {
+	int msecs = currentTime.msecsTo( QTime::currentTime() );
+	int remTime = timer.remainingTime();
+
+	if( remTime < msecs )
+	{
+		accept();
+		return;
+	}
+
 	QTime time( 0, 0 );
-	time = time.addMSecs( timer.remainingTime() );
+	time = time.addMSecs( remTime );
 
 	QString str = time.toString();
 
 	ui->labelTimer->setText( str );
+
+	currentTime = QTime::currentTime();
 }
 
 void MessageBoxBreak::setInterval( int inter )
@@ -51,4 +61,10 @@ void MessageBoxBreak::setInterval( int inter )
 	interval = inter;
 
 	timer.setInterval( interval );
+}
+
+void MessageBoxBreak::showEvent(QShowEvent * event)
+{
+	Q_UNUSED( event )
+	emit signalPlaySound();
 }

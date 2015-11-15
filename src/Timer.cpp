@@ -19,14 +19,15 @@ void Timer::start(int msec)
 
 void Timer::start()
 {
-	if( 0 < timeLeft )
-	{
-		start( timeLeft );
-	}
-	else
-	{
-		QTimer::start();
-	}
+//	if( 0 < timeLeft )
+//	{
+//		start( timeLeft );
+//	}
+//	else
+//	{
+	timeLeft = -1;
+	QTimer::start();
+//	}
 }
 
 void Timer::stop()
@@ -80,4 +81,11 @@ int Timer::remainingTime() const
 	}
 
 	return result;
+}
+
+void Timer::restart()
+{
+	int inter = interval();
+	stop();
+	start( inter );
 }

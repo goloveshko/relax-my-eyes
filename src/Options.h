@@ -9,6 +9,7 @@
 
 #include "Timer.h"
 #include "SystemIdleTime.h"
+#include "Sound.h"
 
 namespace Ui {
 class Options;
@@ -25,6 +26,10 @@ public:
 protected:
 	void createActions();
 	void createTrayIcon();
+	void createComboBoxAlert();
+	void saveSettings();
+	void loadSettings();
+	void alertChanged( bool playSound );
 
 protected slots:
 	void slotShow();
@@ -39,6 +44,12 @@ protected slots:
 
 	void slotHelp();
 	void slotRestoreDefaults();
+
+	void slotAlertChanged( int index );
+
+	void slotVolumeChanged();
+
+	void slotPlaySound();
 
 private:
 	Ui::Options *ui;
@@ -57,6 +68,8 @@ private:
 	Timer timerCheckIdleTime;
 	QTime timeCheckIdleTime;
 
+	QTime currentTime;
+
 	int microBreak;
 	int microBreakEvery;
 
@@ -64,5 +77,9 @@ private:
 	int restBreakEvery;
 
 	SystemIdleTime systemIdleTime;
+
+	Sound sound;
+
+	bool isTimersPaused;
 };
 

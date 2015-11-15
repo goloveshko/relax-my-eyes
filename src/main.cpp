@@ -8,6 +8,7 @@
 
 #include <QSystemTrayIcon>
 
+#define VERSION "0.0.0.1"
 int main(int argc, char *argv[])
 {
 #ifdef Q_OS_MAC
@@ -23,6 +24,12 @@ int main(int argc, char *argv[])
 	dir.cd("PlugIns");
 	QCoreApplication::addLibraryPath(dir.absolutePath());
 #endif
+
+	QCoreApplication::setOrganizationName( "Goloveshko" );
+	QCoreApplication::setOrganizationDomain( "https://github.com/goloveshko/relax-my-eyes/" );
+	QCoreApplication::setApplicationVersion( VERSION );
+	QCoreApplication::setApplicationName( "Relax my eyes" );
+
 
 	QApplication a(argc, argv);
 
