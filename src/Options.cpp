@@ -43,19 +43,19 @@ Options::Options(QWidget *parent)
 	connect( &timerMicroBreakEvery, SIGNAL( timeout() ), this, SLOT( slotUpdateMicroBreakEvery() ) );
 	connect( &timerRestBreakEvery, SIGNAL( timeout() ), this, SLOT( slotUpdateRestBreakEvery() ) );
 
-	connect( ui->buttonBox->button( QDialogButtonBox::Close ), SIGNAL( clicked() ), this, SLOT( reject() ) );
-	connect( ui->buttonBox->button( QDialogButtonBox::Help ), SIGNAL( clicked() ), this, SLOT( slotHelp() ) );
-	connect( ui->buttonBox->button( QDialogButtonBox::RestoreDefaults ), SIGNAL( clicked() ), this, SLOT( slotRestoreDefaults() ) );
+	connect( ui->buttonBox->button( QDialogButtonBox::Close ), &QPushButton::clicked, this, &Options::reject );
+	connect( ui->buttonBox->button( QDialogButtonBox::Help ), &QPushButton::clicked, this, &Options::slotHelp );
+	connect( ui->buttonBox->button( QDialogButtonBox::RestoreDefaults ), &QPushButton::clicked, this, &Options::slotRestoreDefaults );
 
-	connect( ui->timeEditMicroBreak, SIGNAL( timeChanged(const QTime &) ), this, SLOT( slotTimeChanged(const QTime &) ) );
-	connect( ui->timeEditMicroBreakEvery, SIGNAL( timeChanged(const QTime &) ), this, SLOT( slotTimeChanged(const QTime &) ) );
-	connect( ui->timeEditRestBreak, SIGNAL( timeChanged(const QTime &) ), this, SLOT( slotTimeChanged(const QTime &) ) );
-	connect( ui->timeEditRestBreakEvery, SIGNAL( timeChanged(const QTime &) ), this, SLOT( slotTimeChanged(const QTime &) ) );
+	connect( ui->timeEditMicroBreak, &QTimeEdit::timeChanged, this, &Options::slotTimeChanged );
+	connect( ui->timeEditMicroBreakEvery, &QTimeEdit::timeChanged, this, &Options::slotTimeChanged );
+	connect( ui->timeEditRestBreak, &QTimeEdit::timeChanged, this, &Options::slotTimeChanged );
+	connect( ui->timeEditRestBreakEvery, &QTimeEdit::timeChanged, this, &Options::slotTimeChanged );
 
-	connect( ui->sliderVolume, SIGNAL( sliderReleased() ), this, SLOT( slotVolumeChanged() ) );
+	connect( ui->sliderVolume, &QSlider::sliderReleased, this, &Options::slotVolumeChanged );
 
 	timerCheckIdleTime.start( 400 );
-	connect( &timerCheckIdleTime, SIGNAL( timeout() ), this, SLOT( slotCheckIdleTime() ) );
+	connect( &timerCheckIdleTime, &Timer::timeout, this, &Options::slotCheckIdleTime );
 
 	ui->labelDebug->hide();
 
@@ -71,16 +71,16 @@ Options::~Options()
 void Options::createActions()
 {
 	actionShow = new QAction(tr("&Show"), this);
-	connect(actionShow, SIGNAL(triggered()), this, SLOT(slotShow()));
+	connect(actionShow, &QAction::triggered, this, &Options::slotShow);
 
 	actionQuit = new QAction(tr("&Quit"), this);
-	connect(actionQuit, SIGNAL(triggered()), qApp, SLOT(quit()));
+	connect(actionQuit, &QAction::triggered, qApp, &QApplication::quit);
 
 	actionTakeMicroBreak = new QAction(tr("Take a micro break"), this);
-	connect(actionTakeMicroBreak, SIGNAL(triggered()), this, SLOT(slotUpdateMicroBreakEvery()));
+	connect(actionTakeMicroBreak, &QAction::triggered, this, &Options::slotUpdateMicroBreakEvery);
 
 	actionTakeRestBreak = new QAction(tr("Take a rest break"), this);
-	connect(actionTakeRestBreak, SIGNAL(triggered()), this, SLOT(slotUpdateRestBreakEvery()));
+	connect(actionTakeRestBreak, &QAction::triggered, this, &Options::slotUpdateRestBreakEvery);
 }
 
 void Options::createTrayIcon()
@@ -102,8 +102,8 @@ void Options::createTrayIcon()
 
 	trayIcon->setToolTip(tr("Relax My Eyes"));
 
-	connect( trayIconMenu, SIGNAL(aboutToShow()), this, SLOT(slotAboutToShowTrayMenu()) );
-	connect( trayIconMenu, SIGNAL(aboutToHide()), this, SLOT(slotAboutToHideTrayMenu()) );
+	connect( trayIconMenu, &QMenu::aboutToShow, this, &Options::slotAboutToShowTrayMenu );
+	connect( trayIconMenu, &QMenu::aboutToHide, this, &Options::slotAboutToHideTrayMenu );
 }
 
 void Options::createComboBoxAlert()
@@ -113,7 +113,7 @@ void Options::createComboBoxAlert()
 		ui->comboBoxAlert->addItem( var.baseName(), var.filePath() );
 	}
 
-	connect( ui->comboBoxAlert, SIGNAL( activated(int) ), this, SLOT( slotAlertChanged(int) ) );
+	connect( ui->comboBoxAlert, static_cast<void (QComboBox::*)(int)>(&QComboBox::activated), this, &Options::slotAlertChanged );
 }
 
 void Options::slotShow()
@@ -160,7 +160,7 @@ void Options::slotUpdateMicroBreakEvery()
 	timerCheckIdleTime.stop();
 
 	MessageBoxBreak msg( tr( "micro break" ), microBreak );
-	connect( &msg, SIGNAL( signalPlaySound() ), this, SLOT( slotPlaySound() ) );
+	connect( &msg, &MessageBoxBreak::signalPlaySound, this, &Options::slotPlaySound );
 	msg.exec();
 
 	timerMicroBreakEvery.start( microBreakEvery );
@@ -184,7 +184,7 @@ void Options::slotUpdateRestBreakEvery()
 	timerCheckIdleTime.stop();
 
 	MessageBoxBreak msg( tr( "rest break" ), restBreak );
-	connect( &msg, SIGNAL( signalPlaySound() ), this, SLOT( slotPlaySound() ) );
+	connect( &msg, &MessageBoxBreak::signalPlaySound, this, &Options::slotPlaySound );
 	msg.exec();
 
 	timerMicroBreakEvery.start( microBreakEvery );
@@ -218,14 +218,14 @@ void Options::slotCheckIdleTime()
 	{
 		timerMicroBreakEvery.stop();
 		timerMicroBreakEvery.start( microBreakEvery );
-		//qDebug() << "intervalTimeMicroBreak" << intervalTimeMicroBreak / 1000 << msecs << currentTime << microBreakEvery / 1000;
+		//qDebug() << "1 intervalTimeMicroBreak" << intervalTimeMicroBreak / 1000 << msecs << currentTime << microBreakEvery / 1000;
 		//QMessageBox::information( NULL, "timerMicroBreakEvery reset", "timerMicroBreakEvery reset");
 
 		if( intervalTimeRestBreak < msecs )
 		{
 			timerRestBreakEvery.stop();
 			timerRestBreakEvery.start( restBreakEvery );
-			//qDebug() << "intervalTimeRestBreak" << intervalTimeRestBreak / 1000 << msecs << currentTime << restBreakEvery / 1000;
+			//qDebug() << "2 intervalTimeRestBreak" << intervalTimeRestBreak / 1000 << msecs << currentTime << restBreakEvery / 1000;
 			//QMessageBox::information( NULL, "timerRestBreakEvery reset", "timerRestBreakEvery reset");
 		}
 		currentTime = QTime::currentTime();
@@ -240,19 +240,20 @@ void Options::slotCheckIdleTime()
 		currentTime = QTime::currentTime();
 	}
 
+	//qDebug() << "getIdleTime" << it;
 	if( !isTimersPaused && PAUSE_TIMER_AFTER_SEC < it )
 	{
 		timerMicroBreakEvery.pause();
 		timerRestBreakEvery.pause();
 		isTimersPaused = true;
-		//qDebug() << "Pause" << it << intervalTimeMicroBreak / 1000 << intervalTimeRestBreak / 1000 << msecs << QTime::currentTime();
+		qDebug() << "Pause" << it << intervalTimeMicroBreak / 1000 << intervalTimeRestBreak / 1000 << msecs << QTime::currentTime();
 	}
 	else if( isTimersPaused && PAUSE_TIMER_AFTER_SEC > it )
 	{
 		timerMicroBreakEvery.resume();
 		timerRestBreakEvery.resume();
 		isTimersPaused = false;
-		//qDebug() << "Resume" << it << intervalTimeMicroBreak / 1000 << intervalTimeRestBreak / 1000 << msecs << QTime::currentTime();
+		qDebug() << "Resume" << it << intervalTimeMicroBreak / 1000 << intervalTimeRestBreak / 1000 << msecs << QTime::currentTime();
 	}
 }
 

@@ -18,6 +18,8 @@ public:
 
 	QFileInfoList getSoundInfoList() const;
 
+	void getWindow();
+
 private:
 	QString path;
 	float volume;

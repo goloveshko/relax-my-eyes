@@ -15,7 +15,7 @@ MessageBoxBreak::MessageBoxBreak( const QString &title, int inter, QWidget *pare
 
 	setWindowFlags( Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowStaysOnTopHint );
 
-	connect( ui->buttonBox->button( QDialogButtonBox::Cancel ), SIGNAL( clicked() ), this, SLOT( reject() ) );
+	connect( ui->buttonBox->button( QDialogButtonBox::Cancel ), SIGNAL( clicked() ), this, SLOT( slotSkip() ) );
 
 	ui->buttonBox->button( QDialogButtonBox::Cancel )->setText( tr("Skip") );
 
@@ -63,8 +63,26 @@ void MessageBoxBreak::setInterval( int inter )
 	timer.setInterval( interval );
 }
 
-void MessageBoxBreak::showEvent(QShowEvent * event)
+void MessageBoxBreak::showEvent(QShowEvent *event)
 {
 	Q_UNUSED( event )
 	emit signalPlaySound();
+}
+
+void MessageBoxBreak::slotSkip()
+{
+	reject();
+	helper.bringToFront();
+}
+
+void MessageBoxBreak::leaveEvent(QEvent *event)
+{
+	QDialog::leaveEvent(event);
+	helper.bringToFront();
+}
+
+void MessageBoxBreak::moveEvent(QMoveEvent *event)
+{
+	QDialog::moveEvent(event);
+	helper.bringToFront();
 }

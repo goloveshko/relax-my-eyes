@@ -6,8 +6,6 @@ project(${project_name} VERSION 1.0.0.10)
 
 set(library_name ${PROJECT_NAME}${suffix})
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
@@ -17,6 +15,7 @@ find_package(Qt5Widgets)
 find_package(Qt5Multimedia)
 
 set (HEADERS
+	./ApplicationHelper.h
 	./MessageBoxBreak.h
 	./Options.h
 	./Timer.h
@@ -40,6 +39,7 @@ set(EXTRA_LIBS)
 IF (APPLE)
 set(SOURCES
 	${SOURCES}
+	./ApplicationHelper.mm
 	./Sound.mm
 	./SystemIdleTime.mm
 )
@@ -64,12 +64,18 @@ set(SOURCES
 	if(ApplicationServicesFramework)
 		list(APPEND MAC_LIBS ${ApplicationServicesFramework})
 	endif(ApplicationServicesFramework)
+	
+	find_library(IOKIT NAMES IOKit)
+	if(IOKIT)
+		list(APPEND MAC_LIBS ${IOKIT})
+	endif(IOKIT)
 
 ENDIF (APPLE)
 
 IF (MSVC)
 set(SOURCES
 	${SOURCES}
+	./ApplicationHelper.cpp
 	./SystemIdleTime.cpp
 )
 ENDIF (MSVC)

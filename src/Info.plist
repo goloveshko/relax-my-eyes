@@ -7,9 +7,9 @@
 	<key>CFBundleExecutable</key>
 	<string>RelaxMyEyes</string>
 	<key>CFBundleGetInfoString</key>
-	<string>Created by Qt/QMake</string>
+	<string>Created by Goloveshko Sergey</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.digia.relaxmyeyes</string>
+	<string>com.goloveshko.relaxmyeyes</string>
 	<key>CFBundleName</key>
 	<string>Relax My Eyes</string>
 	<key>LSUIElement</key>

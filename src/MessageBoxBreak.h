@@ -1,8 +1,9 @@
 #pragma once
 
 #include <QDialog>
-#include <QTimer>
 #include <QTime>
+#include <QTimer>
+#include "ApplicationHelper.h"
 
 namespace Ui {
 class MessageBoxBreak;
@@ -19,10 +20,13 @@ public:
 	void setInterval( int inter );
 
 protected:
-	void showEvent(QShowEvent * event);
+	void showEvent(QShowEvent *event);
+	void leaveEvent(QEvent *event);
+	void moveEvent(QMoveEvent *event);
 
 protected slots:
 	void slotUpdateTime();
+	void slotSkip();
 
 signals:
 	void signalPlaySound();
@@ -33,5 +37,6 @@ private:
 	QTimer timer;
 	QTimer currentTimer;
 	QTime currentTime;
+	ApplicationHelper helper;
 };
 
