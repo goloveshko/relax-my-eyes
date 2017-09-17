@@ -23,9 +23,12 @@
 #define ALERT "Alert"
 #define ALERT_VOLUME "Alert Volume"
 
+#define START_ON_LOGIN "Start on login"
+
 Options::Options(QWidget *parent)
 	: QDialog(parent)
 	, ui(new Ui::Options)
+	, launchAgents(new LaunchAgents(this))
 	, timeCheckIdleTime( 0, 0 )
 	, currentTime( QTime::currentTime() )
 	, isTimersPaused( false )
@@ -53,6 +56,8 @@ Options::Options(QWidget *parent)
 	connect( ui->timeEditRestBreakEvery, &QTimeEdit::timeChanged, this, &Options::slotTimeChanged );
 
 	connect( ui->sliderVolume, &QSlider::sliderReleased, this, &Options::slotVolumeChanged );
+
+	connect( ui->checkBoxStartOnLogin, &QCheckBox::toggled, launchAgents, &LaunchAgents::slotCheckBoxStartOnLogin );
 
 	timerCheckIdleTime.start( 400 );
 	connect( &timerCheckIdleTime, &Timer::timeout, this, &Options::slotCheckIdleTime );
@@ -283,6 +288,8 @@ void Options::slotRestoreDefaults()
 	ui->comboBoxAlert->setCurrentIndex( 0 );
 
 	ui->sliderVolume->setValue( 50 );
+	
+	ui->checkBoxStartOnLogin->setChecked( false );
 
 	slotTimeChanged();
 }
@@ -340,6 +347,8 @@ void Options::saveSettings()
 	int index = ui->comboBoxAlert->currentIndex();
 
 	int value = ui->sliderVolume->value();
+	
+	bool isCheckedStartOnLogin = ui->checkBoxStartOnLogin->isChecked();
 
 	settings.setValue( TIME_MICRO_BREAK,		timeMicroBreak );
 	settings.setValue( TIME_MICRO_BREAK_EVERY,	timeMicroBreakEvery );
@@ -348,6 +357,8 @@ void Options::saveSettings()
 
 	settings.setValue( ALERT,					index );
 	settings.setValue( ALERT_VOLUME,			value );
+	
+	settings.setValue( START_ON_LOGIN,			isCheckedStartOnLogin );
 }
 
 void Options::loadSettings()
@@ -362,6 +373,8 @@ void Options::loadSettings()
 	int index = settings.value( ALERT, 0 ).toInt();
 	int value = settings.value( ALERT_VOLUME, 50 ).toInt();
 
+	bool isCheckedStartOnLogin = settings.value( START_ON_LOGIN, false ).toBool();
+
 	ui->timeEditMicroBreak->setTime( timeMicroBreak );
 	ui->timeEditMicroBreakEvery->setTime( timeMicroBreakEvery );
 	ui->timeEditRestBreak->setTime( timeRestBreak );
@@ -370,6 +383,8 @@ void Options::loadSettings()
 	ui->comboBoxAlert->setCurrentIndex( index );
 
 	ui->sliderVolume->setValue( value );
+	
+	ui->checkBoxStartOnLogin->setChecked(isCheckedStartOnLogin);
 
 	slotTimeChanged();
 	alertChanged( false );

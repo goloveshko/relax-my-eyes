@@ -10,6 +10,7 @@
 #include "Timer.h"
 #include "SystemIdleTime.h"
 #include "Sound.h"
+#include "LaunchAgents.h"
 
 namespace Ui {
 class Options;
@@ -61,6 +62,8 @@ private:
 
 	QPointer< QSystemTrayIcon >	trayIcon;
 	QPointer< QMenu >			trayIconMenu;
+	
+	QPointer<LaunchAgents> 		launchAgents;
 
 	Timer timerMicroBreakEvery;
 	Timer timerRestBreakEvery;

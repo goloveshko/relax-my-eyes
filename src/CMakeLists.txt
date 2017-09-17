@@ -16,6 +16,7 @@ find_package(Qt5Multimedia)
 
 set (HEADERS
 	./ApplicationHelper.h
+	./LaunchAgents.h
 	./MessageBoxBreak.h
 	./Options.h
 	./Timer.h
@@ -23,6 +24,7 @@ set (HEADERS
 	./SystemIdleTime.h)
 
 set (SOURCES
+	./LaunchAgents.cpp
 	./main.cpp
 	./MessageBoxBreak.cpp
 	./Options.cpp
