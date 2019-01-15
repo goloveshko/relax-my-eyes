@@ -34,6 +34,8 @@ Options::Options(QWidget *parent)
 	, isTimersPaused( false )
 {
 	ui->setupUi(this);
+	
+	player = new QMediaPlayer(this);
 
 	setWindowFlags( Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowStaysOnTopHint );
 
@@ -304,11 +306,13 @@ void Options::alertChanged( bool playSound )
 {
 	QString path = ui->comboBoxAlert->itemData( ui->comboBoxAlert->currentIndex() ).toString();
 
-	sound.setPath( path );
+	player->setMedia(QUrl::fromLocalFile(path));
+	//sound.setPath( path );
 
 	if( playSound )
 	{
-		sound.play();
+		player->play();
+		//sound.play();
 	}
 }
 
@@ -322,17 +326,22 @@ void Options::slotVolumeChanged()
 {
 	int value = ui->sliderVolume->value();
 
-	float volume = (float)value / 100.0f;
+	//float volume = (float)value / 100.0f;
 
-	volume = qMax( 0.0f, volume );
-	volume = qMin( 1.0f, volume );
-	sound.setVolume( volume );
-	sound.play();
+	//volume = qMax( 0.0f, volume );
+	//volume = qMin( 1.0f, volume );
+	//sound.setVolume( volume );
+	//sound.play();
+	float volume = qMin( 100.0f, (float)value );
+	player->setVolume( volume );
+	player->play();
 }
 
 void Options::slotPlaySound()
 {
-	sound.play();
+	//sound.play();
+	//player->play();
+	alertChanged(true);
 }
 
 void Options::saveSettings()

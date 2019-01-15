@@ -6,6 +6,7 @@
 #include <QPointer>
 #include <QMap>
 #include <QTime>
+#include <QMediaPlayer>
 
 #include "Timer.h"
 #include "SystemIdleTime.h"
@@ -81,6 +82,7 @@ private:
 
 	SystemIdleTime systemIdleTime;
 
+	QPointer< QMediaPlayer > player;
 	Sound sound;
 
 	bool isTimersPaused;
