@@ -104,6 +104,7 @@ void Options::createTrayIcon()
 	trayIcon->setContextMenu(trayIconMenu);
 
 	QIcon icon = QIcon(":/images/tray.png");
+	icon.setIsMask(true);
 	trayIcon->setIcon(icon);
 	setWindowIcon(icon);
 
