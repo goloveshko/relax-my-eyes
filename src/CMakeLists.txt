@@ -82,6 +82,15 @@ set(SOURCES
 )
 ENDIF (MSVC)
 
+IF (UNIX)
+set(SOURCES
+        ${SOURCES}
+        ./ApplicationHelper.cpp
+        ./SoundUnix.cpp
+        ./SystemIdleTime.cpp
+)
+ENDIF (MSVC)
+
 add_executable(${project_name} WIN32 MACOSX_BUNDLE ${SOURCES} ${HEADERS} ${RESOURCES})
 set_target_properties(${project_name} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
 target_link_libraries(${project_name} Qt5::Widgets Qt5::Multimedia ${MAC_LIBS} ${EXTRA_LIBS})
