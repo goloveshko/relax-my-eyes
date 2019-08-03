@@ -4,6 +4,8 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/scrnsaver.h>
 
+#include <chrono>
+
 SystemIdleTime::SystemIdleTime()
 {
 }
@@ -34,7 +36,10 @@ double SystemIdleTime::getIdleTime()
 
     XCloseDisplay (display); display = 0;
 
-    result = info.idle;
+    std::chrono::milliseconds ms (info.idle);
+    std::chrono::seconds s = std::chrono::duration_cast<std::chrono::seconds> (ms);
+
+    result = s.count();
 
     //qDebug() << "SystemIdleTime" << result;
 

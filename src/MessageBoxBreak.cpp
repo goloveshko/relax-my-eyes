@@ -2,6 +2,7 @@
 #include "ui_MessageBoxBreak.h"
 #include <QTime>
 #include <QPushButton>
+#include <QDebug>
 
 MessageBoxBreak::MessageBoxBreak( const QString &title, int inter, QWidget *parent )
 	: QDialog( parent )
@@ -27,6 +28,9 @@ MessageBoxBreak::MessageBoxBreak( const QString &title, int inter, QWidget *pare
 
 	timer.start();
 	currentTimer.start();
+
+    QMargins margins = ui->gridLayout->contentsMargins();
+    setFixedSize(width() + margins.left() + margins.right(), height() + margins.top() + margins.bottom());
 }
 
 MessageBoxBreak::~MessageBoxBreak()

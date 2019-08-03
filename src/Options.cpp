@@ -37,9 +37,9 @@ Options::Options(QWidget *parent)
 	
 	player = new QMediaPlayer(this);
 
-	setWindowFlags( Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowStaysOnTopHint );
+    setWindowFlags( Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowStaysOnTopHint );
 
-	createActions();
+    createActions();
 	createTrayIcon();
 	createComboBoxAlert();
 
@@ -67,6 +67,9 @@ Options::Options(QWidget *parent)
 	ui->labelDebug->hide();
 
 	loadSettings();
+
+    QMargins margins = ui->gridLayout->contentsMargins();
+    setFixedSize(width() + margins.left() + margins.right(), height() + margins.top() + margins.bottom());
 }
 
 Options::~Options()
@@ -104,7 +107,7 @@ void Options::createTrayIcon()
 	trayIcon->setContextMenu(trayIconMenu);
 
 	QIcon icon = QIcon(":/images/tray.png");
-	icon.setIsMask(true);
+    icon.setIsMask(true);
 	trayIcon->setIcon(icon);
 	setWindowIcon(icon);
 
@@ -249,14 +252,14 @@ void Options::slotCheckIdleTime()
 	}
 
 	//qDebug() << "getIdleTime" << it;
-	if( !isTimersPaused && PAUSE_TIMER_AFTER_SEC < it )
+    if( !isTimersPaused && (PAUSE_TIMER_AFTER_SEC < it) )
 	{
 		timerMicroBreakEvery.pause();
 		timerRestBreakEvery.pause();
 		isTimersPaused = true;
 		qDebug() << "Pause" << it << intervalTimeMicroBreak / 1000 << intervalTimeRestBreak / 1000 << msecs << QTime::currentTime();
 	}
-	else if( isTimersPaused && PAUSE_TIMER_AFTER_SEC > it )
+    else if( isTimersPaused && (PAUSE_TIMER_AFTER_SEC > it) )
 	{
 		timerMicroBreakEvery.resume();
 		timerRestBreakEvery.resume();

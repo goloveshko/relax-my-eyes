@@ -90,6 +90,9 @@ IF (UNIX)
         message(FATAL_ERROR "X11 Screensaver library (libXss) is required, please install libxss-dev")
     endif()
 
+    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -no-pie -fno-exceptions -std=c++11 -Wno-deprecated-declarations -Wno-reorder -O2")
+    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -no-pie -fno-exceptions -std=c++11 -Wno-deprecated-declarations -Wno-reorder -O2")
+
     set(EXTRA_LIBS
         ${EXTRA_LIBS}
         ${X11_LIBRARIES}
